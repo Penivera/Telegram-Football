@@ -1,21 +1,47 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { ArrowRight, Trophy, Sparkles, Flame, UserPlus, Users } from "lucide-react";
 import NFTCard from "@/components/game/NFTCard";
+import { useAuth } from "../lib/auth";
 import logo from "@assets/generated_images/tof_football_game_logo.png";
-import playerCard from "@assets/generated_images/football_player_sticker_nft_card.png";
+import playerCardBg from "@assets/generated_images/football_player_sticker_nft_card.png";
 import bgPattern from "@assets/generated_images/abstract_football_field_background.png";
+import type { Player } from "@shared/schema";
 
 export default function Home() {
-  const featuredCards = [
-    { id: 1, name: "Striker Prime", rarity: "Legendary" as const, stats: { pace: 95, shoot: 92, def: 45 } },
-    { id: 2, name: "Midfield Maestro", rarity: "Epic" as const, stats: { pace: 82, shoot: 85, def: 78 } },
-  ];
+  const { user } = useAuth();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      fetchPlayers();
+    }
+  }, [user]);
+
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/user/${user?.id}/players`);
+      const data = await res.json();
+      setPlayers(data);
+    } catch (e) {
+      console.error("Failed to load players");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Grab the 2 highest rated players to feature
+  const featuredCards = players
+    .sort((a, b) => b.overallRating - a.overallRating)
+    .slice(0, 2);
 
   return (
     <div className="min-h-screen pb-24 relative overflow-hidden">
       {/* Background Pattern */}
-      <div 
+      <div
         className="fixed inset-0 z-0 opacity-20 pointer-events-none"
         style={{
           backgroundImage: `url(${bgPattern})`,
@@ -23,7 +49,7 @@ export default function Home() {
           backgroundPosition: 'center',
         }}
       />
-      
+
       {/* Header */}
       <header className="relative z-10 p-6 flex justify-between items-center bg-gradient-to-b from-background to-transparent">
         <div className="flex items-center gap-3">
@@ -40,25 +66,25 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2 bg-secondary/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/5">
           <span className="w-4 h-4 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500" />
-          <span className="text-sm font-bold font-mono">2,500</span>
+          <span className="text-sm font-bold font-mono">{user?.coins || 0}</span>
         </div>
       </header>
 
       <main className="relative z-10 px-4 space-y-8">
         {/* Hero Section */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="glass-card rounded-2xl p-6 relative overflow-hidden group"
         >
           <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-colors" />
-          
+
           <div className="relative z-10">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider mb-3 border border-primary/20">
               <Flame size={12} /> Season 4 Live
             </span>
             <h2 className="font-display text-3xl font-bold uppercase italic leading-none mb-2">
-              Ready for <br/><span className="text-primary text-glow">Kickoff?</span>
+              Ready for <br /><span className="text-primary text-glow">Kickoff?</span>
             </h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-[70%]">
               Join the daily tournament and win exclusive NFT stickers.
@@ -103,29 +129,37 @@ export default function Home() {
               <span className="text-xs text-primary hover:underline cursor-pointer">View All</span>
             </Link>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
-            {featuredCards.map((card, i) => (
-              <motion.div
-                key={card.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <NFTCard 
-                  image={playerCard}
-                  name={card.name}
-                  rarity={card.rarity}
-                  stats={card.stats}
-                />
-              </motion.div>
-            ))}
-            
-            {/* Add New Slot */}
-            <div className="aspect-[3/4] rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-white/5 hover:border-white/20 transition-all cursor-pointer">
-              <UserPlus size={24} />
-              <span className="text-xs font-bold uppercase tracking-wider">Recruit</span>
-            </div>
+            {loading ? (
+              <div className="col-span-2 text-center text-muted-foreground py-10">Loading players...</div>
+            ) : featuredCards.length > 0 ? (
+              featuredCards.map((card, i) => (
+                <motion.div
+                  key={card.id}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <NFTCard
+                    image={playerCardBg}
+                    name={card.name}
+                    rarity={card.rarity as any}
+                    stats={{ pace: card.speed, shoot: card.attack, def: card.defense }}
+                  />
+                </motion.div>
+              ))
+            ) : null}
+
+            {/* Add New Slot if empty or just 1 player */}
+            {featuredCards.length < 2 && (
+              <Link href="/market">
+                <div className="aspect-[3/4] h-full rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-white/5 hover:border-white/20 transition-all cursor-pointer">
+                  <UserPlus size={24} />
+                  <span className="text-xs font-bold uppercase tracking-wider text-center px-2">Recruit<br />Player</span>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       </main>

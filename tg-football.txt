@@ -1,0 +1,113 @@
+TON OPEN FOOTBALL ($TOF)
+GAME DESIGN & TECHNICAL SPECIFICATION (MVP)
+1. Product Overview
+Game Type: Competitive Football Manager (Simulation PvP)
+Platform: Telegram Mini App
+Blockchain: TON
+Primary Goal (MVP): Deliver a fast, competitive PvP football simulation with token utility and
+progression system.
+2. Core Game Loop
+1. User opens Telegram Mini App
+2. Auto-auth via Telegram
+3. Connect TON wallet
+4. Receives starter squad
+5. Plays PvP match
+6. Wins/loses → earns rewards
+7. Upgrades team
+8. Climbs leaderboard
+9. Repeat (Target loop: 3–5 minutes)
+3. User System
+Authentication:
+- Telegram ID as primary user ID
+- TON wallet address linked
+Backend stores: telegram_id, wallet_address, username, elo_rating, coins, tof_balance
+
+4. Team System
+Squad Structure:
+- 11 Starting players
+- 3 Bench players
+- Formations: 4-4-2, 4-3-3, 3-5-2
+Player Object:
+- id, owner_id, position, rarity
+- attack, defense, speed, stamina
+- overall_rating, level, max_level
+Overall Rating Formula:
+(attack × 0.35) + (defense × 0.30) + (speed × 0.20) + (stamina × 0.15)
+5. Match Engine (Server-Side Only)
+Team Strength =
+(Avg Attack × 0.35) +
+(Avg Defense × 0.30) +
+(Formation Bonus × 0.15) +
+(Avg Stamina × 0.10) +
+(Random Factor 0–8%)
+Win Probability:
+Team A Strength / (Team A + Team B)
+Includes: Winner, Scoreline, Match Report
+ELO System: Start 1000, scaled gain/loss, weekly reset.
+6. Reward System
+
+Win: Coins + small $TOF + XP
+Loss: Small coins + XP
+Draw: Moderate coins + XP
+XP unlocks progression tiers.
+7. Upgrade System
+Upgrade requires Coins + $TOF
+Effect: +1 random stat (within rarity cap)
+Rarity Caps:
+Common 10
+Rare 20
+Epic 30
+Legendary 40
+Burn Logic:
+20% of $TOF burned, 80% to treasury.
+8. Pack System
+Standard (Telegram Stars)
+Premium (Toncoin)
+Elite ($TOF)
+Example Probabilities:
+Standard: 70% Common, 25% Rare, 5% Epic
+Premium: 50% Rare, 35% Epic, 15% Legendary
+Elite: 30% Epic, 70% Legendary
+9. Economy Structure
+
+Currencies:
+- Coins (off-chain)
+- Toncoin (on-chain)
+- Telegram Stars
+- $TOF (Jetton)
+$TOF Utility:
+Upgrades, Tournament Entry, Elite Packs, Marketplace Fees, Battle Pass.
+10. Smart Contracts (TON)
+- $TOF Jetton Contract
+- Tournament Escrow
+- Burn Mechanism
+- Treasury Wallet
+NFT Player Minting: Phase 2
+11. Backend Requirements
+Suggested Stack:
+- Node.js
+- PostgreSQL
+- Redis
+- TON SDK
+Core Modules:
+Auth, Match Engine, ELO System, Reward Distribution,
+Pack Probability Engine, Upgrade Logic, Anti-cheat Validation.
+12. Anti-Cheat
+
+- Server-side match calculations
+- Match cooldown timers
+- Wallet-based identity
+- No client-trusted stats
+13. MVP Scope
+Included:
+Telegram login, Wallet connect, Starter team,
+PvP matchmaking, Match simulation, Upgrades,
+Pack purchase, Leaderboard.
+Excluded:
+NFT minting, Marketplace, Clan system, Live animation.
+14. Development Timeline
+Week 1–2: Architecture + DB + Wallet
+Week 3–5: Player system + Match engine + ELO
+Week 6–7: Upgrade + Packs
+Week 8: Testing + Balancing
+Estimated Total: 8 Weeks

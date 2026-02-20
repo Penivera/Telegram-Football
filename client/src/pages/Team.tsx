@@ -1,96 +1,220 @@
-import { motion } from "framer-motion";
-import { Users, Settings, Plus, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, TrendingUp, X, Shield, Zap, Activity, Sword } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "../lib/auth";
+import { useToast } from "@/hooks/use-toast";
 import NFTCard from "@/components/game/NFTCard";
-import playerCard from "@assets/generated_images/football_player_sticker_nft_card.png";
-import bgPattern from "@assets/generated_images/abstract_football_field_background.png";
+import playerCardBg from "@assets/generated_images/football_player_sticker_nft_card.png";
+import type { Player } from "@shared/schema";
 
 export default function Team() {
-  const formation = ["LW", "ST", "RW", "CM", "CDM", "LB", "CB", "RB", "GK"];
-  const myTeam = [
-    { pos: "ST", name: "Striker Prime", rarity: "Legendary", stats: { pace: 95, shoot: 92, def: 45 } },
-    { pos: "CM", name: "Playmaker", rarity: "Epic", stats: { pace: 82, shoot: 88, def: 60 } },
-    { pos: "CB", name: "The Wall", rarity: "Rare", stats: { pace: 65, shoot: 40, def: 88 } },
-  ];
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchPlayers();
+    }
+  }, [user]);
+
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/user/${user?.id}/players`);
+      const data = await res.json();
+      setPlayers(data);
+    } catch (e) {
+      toast({ title: "Error", description: "Could not load players", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpgrade = async (stat: "attack" | "defense" | "speed" | "stamina") => {
+    if (!selectedPlayer || !user) return;
+
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/store/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, playerId: selectedPlayer.id, stat }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message);
+
+      toast({
+        title: "Upgrade Successful!",
+        description: `${selectedPlayer.name} leveled up!`,
+      });
+
+      // Update local state
+      setSelectedPlayer(data.player);
+      setPlayers(players.map(p => p.id === data.player.id ? data.player : p));
+
+    } catch (e: any) {
+      toast({ title: "Upgrade Failed", description: e.message, variant: "destructive" });
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
+  const getUpgradeCost = (level: number) => {
+    if (level % 10 === 0) {
+      return `${Math.floor(level / 10) * 5} TOF`;
+    }
+    return `${100 + (level * 50)} Coins`;
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden pb-24">
-      {/* Pitch Background */}
-       <div 
-        className="fixed inset-0 z-0 opacity-10 pointer-events-none"
-        style={{
-          backgroundImage: `url(${bgPattern})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      
-      <header className="relative z-10 p-4 flex justify-between items-center bg-background/50 backdrop-blur-md sticky top-0 border-b border-white/5">
-        <h1 className="font-display font-bold text-xl">My Squad</h1>
-        <div className="flex gap-2">
-           <button className="p-2 rounded-full bg-secondary/50 border border-white/10 hover:bg-white/10">
-             <RefreshCw size={18} />
-           </button>
-           <button className="p-2 rounded-full bg-secondary/50 border border-white/10 hover:bg-white/10">
-             <Settings size={18} />
-           </button>
-        </div>
+      <header className="sticky top-0 z-20 p-4 border-b border-white/5 bg-background/80 backdrop-blur-xl">
+        <h1 className="font-display font-bold text-xl flex items-center gap-2">
+          <Users className="text-primary" size={20} /> My Club Inventory
+        </h1>
       </header>
 
-      <main className="relative z-10 p-4">
-        {/* Formation Graphic */}
-        <div className="aspect-[4/5] bg-green-900/20 border-2 border-green-500/20 rounded-2xl relative mb-6 backdrop-blur-sm overflow-hidden p-4">
-          <div className="absolute inset-x-0 top-1/2 h-[2px] bg-white/10" />
-          <div className="absolute inset-x-0 top-1/2 w-24 h-24 rounded-full border-2 border-white/10 -translate-y-1/2 left-1/2 -translate-x-1/2" />
-          
-          <div className="grid grid-cols-3 gap-2 h-full content-between relative z-10">
-            {formation.map((pos, i) => {
-              const player = myTeam.find((p) => p.pos === pos);
-              return (
-                <div key={pos} className="flex flex-col items-center gap-1">
-                  {player ? (
-                    <div className="w-full relative group cursor-pointer">
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 bg-black/80 px-2 rounded text-[10px] font-bold border border-white/20">{pos}</div>
-                      <NFTCard 
-                        image={playerCard}
-                        name={player.name}
-                        rarity={player.rarity as any}
-                        stats={player.stats}
-                        className="w-full shadow-lg scale-90 group-hover:scale-100 group-hover:z-30 transition-all origin-bottom"
-                      />
-                    </div>
-                  ) : (
-                    <motion.div 
-                      whileHover={{ scale: 1.05 }}
-                      className="w-20 h-24 border-2 border-dashed border-white/10 rounded-xl bg-white/5 flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-white/10 hover:border-primary/50 transition-colors"
-                    >
-                      <Plus className="opacity-50" />
-                      <span className="text-[10px] font-bold opacity-50">{pos}</span>
-                    </motion.div>
-                  )}
+      <main className="p-4 relative">
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-8 h-8 rounded-full border-t-2 border-primary animate-spin" />
+          </div>
+        ) : players.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground glass-card rounded-2xl p-6">
+            <h3 className="text-lg font-bold text-white mb-2">No Players Yet</h3>
+            <p className="text-sm mb-4">Visit the Store to open your first pack!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {players.map((player) => (
+              <motion.div
+                key={player.id}
+                whileHover={{ scale: 1.02 }}
+                onClick={() => setSelectedPlayer(player)}
+                className="cursor-pointer relative group"
+              >
+                <NFTCard
+                  image={playerCardBg}
+                  name={player.name}
+                  rarity={player.rarity as any}
+                  stats={{
+                    pace: player.speed,
+                    shoot: player.attack,
+                    def: player.defense
+                  }}
+                />
+                <div className="absolute top-2 right-2 bg-black/80 px-2 py-0.5 rounded text-[10px] font-bold border border-white/20">
+                  Lvl {player.level}
                 </div>
-              )
-            })}
+              </motion.div>
+            ))}
           </div>
-        </div>
+        )}
 
-        {/* Stats Summary */}
-        <div className="glass p-4 rounded-xl border border-white/5">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">Squad Stats</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-display font-bold text-white">85</div>
-              <div className="text-[10px] text-muted-foreground uppercase">Attack</div>
-            </div>
-            <div>
-              <div className="text-2xl font-display font-bold text-white">78</div>
-              <div className="text-[10px] text-muted-foreground uppercase">Midfield</div>
-            </div>
-            <div>
-              <div className="text-2xl font-display font-bold text-white">62</div>
-              <div className="text-[10px] text-muted-foreground uppercase">Defense</div>
-            </div>
-          </div>
-        </div>
+        <AnimatePresence>
+          {selectedPlayer && (
+            <motion.div
+              initial={{ opacity: 0, y: "100%" }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: "100%" }}
+              className="fixed inset-x-0 bottom-0 z-50 bg-background border-t border-white/10 rounded-t-3xl shadow-2xl p-6 pb-12 max-h-[85vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="font-display font-bold text-2xl">{selectedPlayer.name}</h2>
+                  <div className="flex gap-2 text-xs font-bold mt-1">
+                    <span className="text-muted-foreground uppercase">{selectedPlayer.position}</span>
+                    <span className="text-primary">•</span>
+                    <span className="text-primary">OVR {selectedPlayer.overallRating}</span>
+                    <span className="text-primary">•</span>
+                    <span className="text-muted-foreground">LVL {selectedPlayer.level}/{selectedPlayer.maxLevel}</span>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedPlayer(null)} className="p-2 bg-white/5 rounded-full hover:bg-white/10">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex justify-center mb-6">
+                <div className="w-48">
+                  <NFTCard
+                    image={playerCardBg}
+                    name={selectedPlayer.name}
+                    rarity={selectedPlayer.rarity as any}
+                    stats={{ pace: selectedPlayer.speed, shoot: selectedPlayer.attack, def: selectedPlayer.defense }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-bold text-sm uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-primary" /> Upgrades
+                </h3>
+
+                {selectedPlayer.level >= selectedPlayer.maxLevel ? (
+                  <div className="p-4 rounded-xl bg-primary/10 border border-primary/20 text-center text-primary font-bold">
+                    MAX LEVEL REACHED
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-2 text-center">
+                      Next Upgrade Cost: <strong className="text-white">{getUpgradeCost(selectedPlayer.level)}</strong>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        variant="secondary"
+                        className="flex flex-col h-auto py-3 gap-1 bg-white/5 hover:bg-primary/20 hover:border-primary/50 transition-colors border border-white/5"
+                        onClick={() => handleUpgrade("attack")}
+                        disabled={upgrading}
+                      >
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Sword size={12} /> Attack</span>
+                        <span className="font-bold text-lg">{selectedPlayer.attack} &rarr; {selectedPlayer.attack + 2}</span>
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        className="flex flex-col h-auto py-3 gap-1 bg-white/5 hover:bg-primary/20 hover:border-primary/50 transition-colors border border-white/5"
+                        onClick={() => handleUpgrade("defense")}
+                        disabled={upgrading}
+                      >
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Shield size={12} /> Defense</span>
+                        <span className="font-bold text-lg">{selectedPlayer.defense} &rarr; {selectedPlayer.defense + 2}</span>
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        className="flex flex-col h-auto py-3 gap-1 bg-white/5 hover:bg-primary/20 hover:border-primary/50 transition-colors border border-white/5"
+                        onClick={() => handleUpgrade("speed")}
+                        disabled={upgrading}
+                      >
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Zap size={12} /> Speed</span>
+                        <span className="font-bold text-lg">{selectedPlayer.speed} &rarr; {selectedPlayer.speed + 2}</span>
+                      </Button>
+
+                      <Button
+                        variant="secondary"
+                        className="flex flex-col h-auto py-3 gap-1 bg-white/5 hover:bg-primary/20 hover:border-primary/50 transition-colors border border-white/5"
+                        onClick={() => handleUpgrade("stamina")}
+                        disabled={upgrading}
+                      >
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Activity size={12} /> Stamina</span>
+                        <span className="font-bold text-lg">{selectedPlayer.stamina} &rarr; {selectedPlayer.stamina + 2}</span>
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );
