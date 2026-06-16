@@ -30,3 +30,8 @@ export const initTelegramApp = () => {
 export const getTelegramUser = () => {
     return WebApp.initDataUnsafe?.user;
 };
+
+// The raw, signed initData string. Empty when running outside Telegram.
+export const getTelegramInitData = (): string => {
+    return WebApp.initData || "";
+};

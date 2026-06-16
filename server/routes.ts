@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { getStartingLineupStats, simulateMatch, type TeamStats } from "./game/matchEngine";
 import { calculateElo } from "./game/elo";
 import { openPack, type PackType } from "./game/packs";
+import { validateInitData } from "./telegram";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -12,10 +13,35 @@ export async function registerRoutes(
 
   app.post("/api/auth/telegram", async (req: Request, res: Response) => {
     try {
-      const { telegramId, username, firstName, lastName } = req.body;
+      const botToken = process.env.BOT_TOKEN;
+      const { initData } = req.body;
 
-      if (!telegramId) {
-        return res.status(400).json({ message: "telegramId is required" });
+      let telegramId: string;
+      let username: string;
+      let firstName = "";
+      let lastName = "";
+
+      if (initData) {
+        if (!botToken) {
+          return res.status(500).json({ message: "BOT_TOKEN is not configured" });
+        }
+        const validated = validateInitData(initData, botToken);
+        if (!validated) {
+          return res.status(401).json({ message: "Invalid Telegram initData" });
+        }
+        const tgUser = validated.user;
+        telegramId = tgUser.id.toString();
+        firstName = tgUser.first_name || "";
+        lastName = tgUser.last_name || "";
+        username = tgUser.username || `${firstName} ${lastName}`.trim() || telegramId;
+      } else if (process.env.NODE_ENV !== "production") {
+        // Dev-only fallback so the app runs in a plain browser outside Telegram.
+        telegramId = "mock_browser_id";
+        username = "Browser Admin";
+        firstName = "Browser";
+        lastName = "User";
+      } else {
+        return res.status(400).json({ message: "initData is required" });
       }
 
       // Check if user already exists

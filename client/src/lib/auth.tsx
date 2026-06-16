@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { getTelegramUser } from "./telegram";
+import { getTelegramInitData } from "./telegram";
 import type { User } from "@shared/schema";
 
 interface AuthContextType {
@@ -22,31 +22,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         async function authenticate() {
             try {
-                const tgUser = getTelegramUser();
-
-                let telegramId = "mock_browser_id";
-                let username = "Browser Admin";
-                let firstName = "Browser";
-                let lastName = "User";
-
-                if (tgUser) {
-                    telegramId = tgUser.id.toString();
-                    username = tgUser.username || "Unknown";
-                    firstName = tgUser.first_name;
-                    lastName = tgUser.last_name || "";
-                }
+                const initData = getTelegramInitData();
 
                 const response = await fetch("/api/auth/telegram", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({
-                        telegramId,
-                        username,
-                        firstName,
-                        lastName,
-                    }),
+                    body: JSON.stringify({ initData }),
                 });
 
                 if (!response.ok) {

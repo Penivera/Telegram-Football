@@ -8,12 +8,16 @@ import { useToast } from "@/hooks/use-toast";
 import bgPattern from "@assets/generated_images/abstract_football_field_background.png";
 import playerCard from "@assets/generated_images/football_player_sticker_nft_card.png";
 
+import CanvasPitch from "@/components/game/CanvasPitch";
+import { type MatchEvent } from "@/components/game/Pitch2D";
+
 type MatchResult = {
   scoreline: string;
   teamAScore: number;
   teamBScore: number;
   winnerId: number | null;
   isDraw: boolean;
+  events: MatchEvent[];
 };
 
 export default function Game() {
@@ -26,6 +30,7 @@ export default function Game() {
     eloChange: number;
     rewards: { coins: number };
   } | null>(null);
+  const [isPlayingMatch, setIsPlayingMatch] = useState(false);
 
   const startMatch = async () => {
     if (!user) return;
@@ -52,6 +57,7 @@ export default function Game() {
         eloChange: data.eloChange,
         rewards: data.rewards
       });
+      setIsPlayingMatch(true);
 
     } catch (e: any) {
       toast({ title: "Matchmaking Error", description: e.message, variant: "destructive" });
@@ -90,7 +96,23 @@ export default function Game() {
       <main className="relative z-10 p-4 space-y-6">
 
         <AnimatePresence>
-          {matchData && (
+          {matchData && isPlayingMatch && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center p-6 bg-background/95 backdrop-blur-md"
+            >
+              <CanvasPitch
+                events={matchData.result.events || []}
+                teamAId={user?.id || 1}
+                teamBId={0} // Represents the bot opponent
+                onComplete={() => setIsPlayingMatch(false)}
+              />
+            </motion.div>
+          )}
+
+          {matchData && !isPlayingMatch && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
