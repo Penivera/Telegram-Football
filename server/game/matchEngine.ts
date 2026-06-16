@@ -1,4 +1,4 @@
-import { type Player, type Squad } from "../../shared/schema";
+import { type Player, type Squad } from "../../shared/schema.js";
 
 export interface TeamStats {
     attack: number;

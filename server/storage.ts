@@ -1,5 +1,5 @@
-import { users, players, squads, matchHistory, type User, type InsertUser, type Player, type Squad, type InsertMatchHistory } from "../shared/schema";
-import { db } from "./db";
+import { users, players, squads, matchHistory, type User, type InsertUser, type Player, type Squad, type InsertMatchHistory } from "../shared/schema.js";
+import { db } from "./db.js";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {

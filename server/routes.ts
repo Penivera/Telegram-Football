@@ -1,9 +1,9 @@
 import type { Express, Request, Response } from "express";
-import { storage } from "./storage";
-import { getStartingLineupStats, simulateMatch, type TeamStats } from "./game/matchEngine";
-import { calculateElo } from "./game/elo";
-import { openPack, type PackType } from "./game/packs";
-import { validateInitData } from "./telegram";
+import { storage } from "./storage.js";
+import { getStartingLineupStats, simulateMatch, type TeamStats } from "./game/matchEngine.js";
+import { calculateElo } from "./game/elo.js";
+import { openPack, type PackType } from "./game/packs.js";
+import { validateInitData } from "./telegram.js";
 
 export async function registerRoutes(
   app: Express
