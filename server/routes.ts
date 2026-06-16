@@ -1,5 +1,4 @@
 import type { Express, Request, Response } from "express";
-import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { getStartingLineupStats, simulateMatch, type TeamStats } from "./game/matchEngine";
 import { calculateElo } from "./game/elo";
@@ -7,9 +6,8 @@ import { openPack, type PackType } from "./game/packs";
 import { validateInitData } from "./telegram";
 
 export async function registerRoutes(
-  httpServer: Server,
   app: Express
-): Promise<Server> {
+) {
 
   app.post("/api/auth/telegram", async (req: Request, res: Response) => {
     try {
@@ -277,5 +275,4 @@ export async function registerRoutes(
     }
   });
 
-  return httpServer;
 }

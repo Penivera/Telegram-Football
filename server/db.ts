@@ -1,11 +1,9 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
-import * as schema from '@shared/schema';
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "../shared/schema";
 
-// If DATABASE_URL is set as "file:./local.db", we only want the path "./local.db"
-const dbPath = process.env.DATABASE_URL
-    ? process.env.DATABASE_URL.replace('file:', '')
-    : './local.db';
+const url = process.env.DATABASE_URL;
+if (!url) throw new Error("DATABASE_URL is not set");
 
-export const sqlite = new Database(dbPath);
-export const db = drizzle(sqlite, { schema });
+const client = postgres(url, { max: 1, idle_timeout: 20, connect_timeout: 10 });
+export const db = drizzle(client, { schema });

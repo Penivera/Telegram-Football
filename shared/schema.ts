@@ -1,21 +1,21 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, serial, boolean, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   telegramId: text("telegram_id").notNull().unique(),
   username: text("username"),
   walletAddress: text("wallet_address"),
   eloRating: integer("elo_rating").notNull().default(1000),
   coins: integer("coins").notNull().default(0), // Off-chain
   tofBalance: integer("tof_balance").notNull().default(0), // Syncs closely with Jetton
-  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const players = sqliteTable("players", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const players = pgTable("players", {
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
   ownerId: integer("owner_id").references(() => users.id).notNull(),
   position: text("position").notNull(), // e.g. "FW", "MF", "DF", "GK"
@@ -32,11 +32,11 @@ export const players = sqliteTable("players", {
   level: integer("level").notNull().default(1),
   maxLevel: integer("max_level").notNull().default(10),
 
-  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const squads = sqliteTable("squads", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const squads = pgTable("squads", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull().unique(),
   formation: text("formation").notNull().default("4-4-2"),
 
@@ -59,16 +59,16 @@ export const squads = sqliteTable("squads", {
   bench3_id: integer("bench3_id").references(() => players.id),
 });
 
-export const matchHistory = sqliteTable("match_history", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const matchHistory = pgTable("match_history", {
+  id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   opponentId: integer("opponent_id").references(() => users.id), // Nullable if playing bot
-  isWin: integer("is_win", { mode: 'boolean' }).notNull(),
-  isDraw: integer("is_draw", { mode: 'boolean' }).notNull().default(false),
+  isWin: boolean("is_win").notNull(),
+  isDraw: boolean("is_draw").notNull().default(false),
   scoreline: text("scoreline").notNull(), // e.g. "2-1"
   eloChange: integer("elo_change").notNull().default(0),
   coinReward: integer("coin_reward").notNull().default(0),
-  playedAt: text("played_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  playedAt: timestamp("played_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });

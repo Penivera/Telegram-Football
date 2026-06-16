@@ -1,4 +1,4 @@
-import { users, players, squads, matchHistory, type User, type InsertUser, type Player, type Squad, type InsertMatchHistory } from "@shared/schema";
+import { users, players, squads, matchHistory, type User, type InsertUser, type Player, type Squad, type InsertMatchHistory } from "../shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
